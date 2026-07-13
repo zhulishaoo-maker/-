@@ -42,11 +42,11 @@ export function App() {
 
       {view === 'home' ? (
         <div className="creation-home">
-          <div className="ambient-orb orb-one" /><div className="ambient-orb orb-two" />
+          <div className="release-pill"><Sparkles size={13} />京营造 AI 营销智能体工作台已上线 <span>↗</span></div>
           <section className="home-intro">
-            <span className="home-kicker"><i />AI NATIVE 营销生产系统</span>
-            <h1>今天，想创造什么<br /><em>营销增长？</em></h1>
-            <p>从一句运营目标开始，营销活动智能体将调度设计、会场、渠道与数据能力，完成生产到增长的闭环。</p>
+            <span className="home-kicker"><i />营销活动智能体已就绪</span>
+            <h1>Hey，今天想创造什么？</h1>
+            <p>输入运营目标，营销活动智能体将调度设计、会场、渠道与数据能力，完成从生产到增长的闭环。</p>
           </section>
 
           <section className="creation-studio">
@@ -54,12 +54,12 @@ export function App() {
               <button className="active"><WandSparkles size={17} /><span><strong>快速生成</strong><small>单项资源，分钟级出稿</small></span></button>
               <button onClick={() => setView('campaign')}><Boxes size={17} /><span><strong>全链路活动</strong><small>跨触点编排与持续优化</small></span><em>进入工作台</em></button>
             </div>
+            <PromptComposer value={composer} onChange={setComposer} onSubmit={generate} />
             <div className="task-tabs">
               {taskTypes.map((task) => <button key={task} className={composer.taskType === task ? 'active' : ''} onClick={() => setComposer({ ...composer, taskType: task })}>
                 <span>{task === '开屏' ? '01' : task === '营销海报' ? '02' : task === 'Banner / 资源位' ? '03' : '04'}</span><div><strong>{task}</strong><small>{taskDescriptions[task]}</small></div>
               </button>)}
             </div>
-            <PromptComposer value={composer} onChange={setComposer} onSubmit={generate} />
           </section>
 
           <footer className="home-proof"><span>确定性品牌压板</span><i /><span>固定 4 方案</span><i /><span>全流程可追溯</span><i /><span>支持人工接管</span></footer>
