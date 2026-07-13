@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Activity, ArrowLeft, Bot, Boxes, Check, ChevronDown, CircleCheck, Code2, Eye, Gauge, GitBranch, LockKeyhole, PanelLeftClose, Play, RotateCcw, ShieldCheck, Sparkles, UnlockKeyhole, WandSparkles } from 'lucide-react'
 import { VenuePreview } from './components/VenuePreview'
 import { PromptComposer } from './components/PromptComposer'
+import { CampaignWorkspace } from './components/CampaignWorkspace'
 import { componentRegistry } from './components/venue/registry'
 import { sampleVenue } from './data/sampleVenue'
 import { candidates, type CandidateId } from './data/candidateVenues'
@@ -10,7 +11,7 @@ import { buildGenerationBrief, defaultComposerState, taskTypes, type ComposerSta
 
 type Tab = 'brief' | 'structure' | 'rules'
 
-type AppView = 'home' | 'results' | 'venue'
+type AppView = 'home' | 'results' | 'campaign' | 'venue'
 
 const taskDescriptions: Record<TaskType, string> = {
   开屏: '抓住第一眼注意力',
@@ -29,13 +30,13 @@ export function App() {
     setView('results')
   }
 
-  if (view === 'venue') return <VenueEditor onBack={() => setView('home')} />
+  if (view === 'venue') return <VenueEditor onBack={() => setView('campaign')} />
 
   return (
     <main className="marketing-shell">
       <header className="marketing-header">
         <button className="brand" onClick={() => setView('home')}><span>J</span><div><strong>京营造</strong><small>AI MARKETING OS</small></div></button>
-        <nav><button className="active">创意工作台</button><button>活动旅程</button><button>资产中心</button><button>数据洞察</button></nav>
+        <nav><button className={view !== 'campaign' ? 'active' : ''} onClick={() => setView('home')}>创意工作台</button><button className={view === 'campaign' ? 'active' : ''} onClick={() => setView('campaign')}>活动旅程</button><button>资产中心</button><button>数据洞察</button></nav>
         <div className="agent-online"><i /><span><strong>营销活动智能体</strong><small>在线 · L1 辅助决策</small></span><Bot size={18} /></div>
       </header>
 
@@ -51,7 +52,7 @@ export function App() {
           <section className="creation-studio">
             <div className="mode-switch">
               <button className="active"><WandSparkles size={17} /><span><strong>快速生成</strong><small>单项资源，分钟级出稿</small></span></button>
-              <button><Boxes size={17} /><span><strong>全链路活动</strong><small>跨触点编排与持续优化</small></span><em>即将开放</em></button>
+              <button onClick={() => setView('campaign')}><Boxes size={17} /><span><strong>全链路活动</strong><small>跨触点编排与持续优化</small></span><em>进入工作台</em></button>
             </div>
             <div className="task-tabs">
               {taskTypes.map((task) => <button key={task} className={composer.taskType === task ? 'active' : ''} onClick={() => setComposer({ ...composer, taskType: task })}>
@@ -63,6 +64,8 @@ export function App() {
 
           <footer className="home-proof"><span>确定性品牌压板</span><i /><span>固定 4 方案</span><i /><span>全流程可追溯</span><i /><span>支持人工接管</span></footer>
         </div>
+      ) : view === 'campaign' ? (
+        <CampaignWorkspace onBack={() => setView('home')} onVenue={() => setView('venue')} />
       ) : (
         <ResultsView brief={brief!} onBack={() => setView('home')} onVenue={() => setView('venue')} />
       )}
