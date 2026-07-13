@@ -1,14 +1,105 @@
-import { useMemo, useState } from 'react'
-import { Activity, Bot, Check, ChevronDown, CircleCheck, Code2, Eye, Gauge, GitBranch, LockKeyhole, PanelLeftClose, Play, RotateCcw, ShieldCheck, Sparkles, UnlockKeyhole } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Activity, ArrowLeft, Bot, Boxes, Check, ChevronDown, CircleCheck, Code2, Eye, Gauge, GitBranch, LockKeyhole, PanelLeftClose, Play, RotateCcw, ShieldCheck, Sparkles, UnlockKeyhole, WandSparkles } from 'lucide-react'
 import { VenuePreview } from './components/VenuePreview'
+import { PromptComposer } from './components/PromptComposer'
 import { componentRegistry } from './components/venue/registry'
 import { sampleVenue } from './data/sampleVenue'
 import { candidates, type CandidateId } from './data/candidateVenues'
 import { pageSchema } from './schema/pageSchema'
+import { buildGenerationBrief, defaultComposerState, taskTypes, type ComposerState, type GenerationBrief, type TaskType } from './domain/generationBrief'
 
 type Tab = 'brief' | 'structure' | 'rules'
 
+type AppView = 'home' | 'results' | 'venue'
+
+const taskDescriptions: Record<TaskType, string> = {
+  开屏: '抓住第一眼注意力',
+  营销海报: '快速承接传播与转化',
+  'Banner / 资源位': '适配站内核心流量入口',
+  营销会场: '搭建完整活动承接链路',
+}
+
 export function App() {
+  const [view, setView] = useState<AppView>('home')
+  const [composer, setComposer] = useState<ComposerState>(defaultComposerState)
+  const [brief, setBrief] = useState<GenerationBrief | null>(null)
+
+  const generate = () => {
+    setBrief(buildGenerationBrief(composer))
+    setView('results')
+  }
+
+  if (view === 'venue') return <VenueEditor onBack={() => setView('home')} />
+
+  return (
+    <main className="marketing-shell">
+      <header className="marketing-header">
+        <button className="brand" onClick={() => setView('home')}><span>J</span><div><strong>京营造</strong><small>AI MARKETING OS</small></div></button>
+        <nav><button className="active">创意工作台</button><button>活动旅程</button><button>资产中心</button><button>数据洞察</button></nav>
+        <div className="agent-online"><i /><span><strong>营销活动智能体</strong><small>在线 · L1 辅助决策</small></span><Bot size={18} /></div>
+      </header>
+
+      {view === 'home' ? (
+        <div className="creation-home">
+          <div className="ambient-orb orb-one" /><div className="ambient-orb orb-two" />
+          <section className="home-intro">
+            <span className="home-kicker"><i />AI NATIVE 营销生产系统</span>
+            <h1>今天，想创造什么<br /><em>营销增长？</em></h1>
+            <p>从一句运营目标开始，营销活动智能体将调度设计、会场、渠道与数据能力，完成生产到增长的闭环。</p>
+          </section>
+
+          <section className="creation-studio">
+            <div className="mode-switch">
+              <button className="active"><WandSparkles size={17} /><span><strong>快速生成</strong><small>单项资源，分钟级出稿</small></span></button>
+              <button><Boxes size={17} /><span><strong>全链路活动</strong><small>跨触点编排与持续优化</small></span><em>即将开放</em></button>
+            </div>
+            <div className="task-tabs">
+              {taskTypes.map((task) => <button key={task} className={composer.taskType === task ? 'active' : ''} onClick={() => setComposer({ ...composer, taskType: task })}>
+                <span>{task === '开屏' ? '01' : task === '营销海报' ? '02' : task === 'Banner / 资源位' ? '03' : '04'}</span><div><strong>{task}</strong><small>{taskDescriptions[task]}</small></div>
+              </button>)}
+            </div>
+            <PromptComposer value={composer} onChange={setComposer} onSubmit={generate} />
+          </section>
+
+          <footer className="home-proof"><span>确定性品牌压板</span><i /><span>固定 4 方案</span><i /><span>全流程可追溯</span><i /><span>支持人工接管</span></footer>
+        </div>
+      ) : (
+        <ResultsView brief={brief!} onBack={() => setView('home')} onVenue={() => setView('venue')} />
+      )}
+    </main>
+  )
+}
+
+function ResultsView({ brief, onBack, onVenue }: { brief: GenerationBrief; onBack: () => void; onVenue: () => void }) {
+  const [selected, setSelected] = useState(0)
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    const timer = window.setTimeout(() => setReady(true), 850)
+    return () => window.clearTimeout(timer)
+  }, [])
+  return <div className="results-page">
+    <div className="results-heading">
+      <button onClick={onBack}><ArrowLeft size={17} />返回创作</button>
+      <div><span>GENERATION / {brief.id.toUpperCase()}</span><h1>4 个创意方案已就绪</h1><p>{brief.prompt}</p></div>
+      <div className="brief-status"><i /><span><strong>规则校验通过</strong><small>品牌压板 · 安全区 · 文案</small></span></div>
+    </div>
+    <div className="candidate-gallery">
+      {[0, 1, 2, 3].map((item) => <button key={item} className={`creative-card variant-${item + 1} ${selected === item ? 'selected' : ''}`} onClick={() => setSelected(item)}>
+        {!ready ? <span className="generating"><Sparkles />生成中</span> : <>
+          <div className="asset-brand"><b>京东 618</b><small>又好又便宜</small></div>
+          <div className="asset-copy"><span>SUMMER {String(item + 1).padStart(2, '0')}</span><h2>{item === 0 ? '冰爽开场' : item === 1 ? '清凉好物' : item === 2 ? '盛夏焕新' : '热爱降温'}</h2><p>{brief.benefit}</p></div>
+          <div className="asset-object"><i /><b /></div>
+          {brief.searchOverlay !== '不使用搜索框压板' && <div className="asset-search">京东搜索「{brief.category}」<strong>搜索</strong></div>}
+          <span className="candidate-index">0{item + 1}</span>
+          {selected === item && <span className="selected-badge"><Check size={13} />已选择</span>}
+        </>}
+      </button>)}
+    </div>
+    <div className="result-actions"><div><strong>方案 {selected + 1}</strong><span>品牌规则已锁定，可继续编辑文案与主体画面</span></div><button className="secondary">单图重试</button><button className="primary" onClick={brief.taskType === '营销会场' ? onVenue : undefined}>{brief.taskType === '营销会场' ? '进入会场编辑器' : '确认并进入精修'}</button></div>
+  </div>
+}
+
+function VenueEditor({ onBack }: { onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('structure')
   const [selectedId, setSelectedId] = useState('grid-01')
   const [previewMode, setPreviewMode] = useState<'mobile' | 'wide'>('mobile')
@@ -57,7 +148,7 @@ export function App() {
 
       <div className="workspace">
         <header className="topbar">
-          <div className="breadcrumb"><span>活动会场</span><b>/</b><strong>{sampleVenue.metadata.title}</strong><em>v003</em></div>
+          <div className="breadcrumb"><button className="editor-back" onClick={onBack}><ArrowLeft size={14} />工作台</button><b>/</b><strong>{sampleVenue.metadata.title}</strong><em>v003</em></div>
           <div className="top-actions">
             <span className="save-state"><CircleCheck size={14} />已保存</span>
             <button className="ghost"><Eye size={16} />预览</button>
