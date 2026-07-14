@@ -1,5 +1,7 @@
-import { ArrowUp, ImagePlus, Layers3, Sparkles } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { ArrowUp, ChevronDown, ImagePlus, Layers3, Sparkles } from 'lucide-react'
 import type { ComposerState } from '../domain/generationBrief'
+import { filterSlotOptions, moveSlotHighlight, resolveSlotValue } from '../domain/editableSlot'
 
 type Props = {
   value: ComposerState
@@ -23,13 +25,67 @@ const labels: Record<keyof typeof options, string> = {
 }
 
 function Slot({ field, value, onChange }: { field: keyof typeof options; value: string; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const [highlighted, setHighlighted] = useState(-1)
+  const initialValue = useRef(value)
+  const listId = useId()
+  const filtered = filterSlotOptions(options[field], draft)
+
+  useEffect(() => setDraft(value), [value])
+
+  const commit = (next = draft) => {
+    const resolved = resolveSlotValue(next, initialValue.current)
+    setDraft(resolved)
+    onChange(resolved)
+    setOpen(false)
+    setHighlighted(-1)
+  }
+
   return (
-    <label className="prompt-slot">
-      <span className="sr-only">{field}</span>
-      <select aria-label={labels[field]} value={value} onChange={(event) => onChange(event.target.value)}>
-        {options[field].map((option) => <option key={option}>{option}</option>)}
-      </select>
-    </label>
+    <span className={`prompt-slot editable-slot ${open ? 'open' : ''}`}>
+      <input
+        aria-label={labels[field]}
+        aria-autocomplete="list"
+        aria-controls={listId}
+        aria-expanded={open}
+        aria-activedescendant={highlighted >= 0 ? `${listId}-${highlighted}` : undefined}
+        role="combobox"
+        value={draft}
+        maxLength={field === 'ratio' ? 30 : 24}
+        style={{ width: `${Math.max(5, Math.min(25, draft.length + 2))}em` }}
+        onFocus={() => { initialValue.current = value; setOpen(true) }}
+        onChange={(event) => { setDraft(event.target.value); setOpen(true); setHighlighted(-1) }}
+        onBlur={() => commit()}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            setOpen(true)
+            setHighlighted((current) => moveSlotHighlight(current, event.key === 'ArrowDown' ? 1 : -1, filtered.length))
+          } else if (event.key === 'Enter') {
+            event.preventDefault()
+            commit(highlighted >= 0 ? filtered[highlighted] : draft)
+          } else if (event.key === 'Escape') {
+            event.preventDefault()
+            setDraft(initialValue.current)
+            setOpen(false)
+            setHighlighted(-1)
+          }
+        }}
+      />
+      <ChevronDown size={14} aria-hidden="true" />
+      {open && <span className="slot-options" id={listId} role="listbox" aria-label={`${labels[field]}推荐项`}>
+        {filtered.length > 0 ? filtered.map((option, index) => <button
+          type="button"
+          id={`${listId}-${index}`}
+          role="option"
+          aria-selected={highlighted === index}
+          className={highlighted === index ? 'highlighted' : ''}
+          key={option}
+          onMouseDown={(event) => { event.preventDefault(); commit(option) }}
+        >{option}</button>) : <em>按 Enter 使用“{draft}”</em>}
+      </span>}
+    </span>
   )
 }
 
