@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { ArrowUp, ChevronDown, ImagePlus, Layers3, Sparkles } from 'lucide-react'
-import type { ComposerState } from '../domain/generationBrief'
+import type { ComposerState, PromptCopy } from '../domain/generationBrief'
 import { filterSlotOptions, moveSlotHighlight, resolveSlotValue } from '../domain/editableSlot'
 
 type Props = {
@@ -17,7 +17,7 @@ const options = {
   searchOverlay: ['京东搜索框压板', '京东搜索框压板 · 浅色', '不使用搜索框压板'],
   style: ['清透冰感', '高饱和未来感', '极简高级', '热烈大促'],
   ratio: ['3:4 · 750×1000', '16:9 · 1920×1080', '1:1 · 1000×1000', '会场首屏 · 750×920'],
-} satisfies Record<Exclude<keyof ComposerState, 'taskType'>, string[]>
+} satisfies Record<Exclude<keyof ComposerState, 'taskType' | 'promptCopy'>, string[]>
 
 const labels: Record<keyof typeof options, string> = {
   campaign: '活动主题', category: '主推品类', benefit: '核心权益', brandOverlay: '品牌压板',
@@ -89,19 +89,52 @@ function Slot({ field, value, onChange }: { field: keyof typeof options; value: 
   )
 }
 
+function EditableText({ field, value, onChange }: { field: keyof PromptCopy; value: string; onChange: (value: string) => void }) {
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (ref.current && document.activeElement !== ref.current && ref.current.textContent !== value) ref.current.textContent = value
+  }, [value])
+
+  const commit = () => {
+    const next = (ref.current?.textContent ?? '').replace(/\s+/g, ' ')
+    if (ref.current) ref.current.textContent = next
+    onChange(next)
+  }
+
+  return <span
+    ref={ref}
+    className="editable-copy"
+    contentEditable
+    suppressContentEditableWarning
+    role="textbox"
+    aria-label={`编辑句式：${field}`}
+    spellCheck={false}
+    onBlur={commit}
+    onKeyDown={(event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        ref.current?.blur()
+      }
+    }}
+  >{value}</span>
+}
+
 export function PromptComposer({ value, onChange, onSubmit }: Props) {
   const set = (field: keyof ComposerState, next: string) => onChange({ ...value, [field]: next })
+  const setCopy = (field: keyof PromptCopy, next: string) => onChange({ ...value, promptCopy: { ...value.promptCopy, [field]: next } })
   return (
     <section className="prompt-composer" aria-label="生成要求">
+      <div className="composer-edit-hint"><span>整段文字可编辑</span><small>点击普通文字即可改写，灰色参数可选择</small></div>
       <div className="composer-sentence">
-        <span>为</span><Slot field="campaign" value={value.campaign} onChange={(next) => set('campaign', next)} />
-        <span>创建一组</span><strong>{value.taskType}</strong><span>，主推</span>
+        <EditableText field="prefix" value={value.promptCopy.prefix} onChange={(next) => setCopy('prefix', next)} /><Slot field="campaign" value={value.campaign} onChange={(next) => set('campaign', next)} />
+        <EditableText field="afterCampaign" value={value.promptCopy.afterCampaign} onChange={(next) => setCopy('afterCampaign', next)} /><strong>{value.taskType}</strong><EditableText field="afterTask" value={value.promptCopy.afterTask} onChange={(next) => setCopy('afterTask', next)} />
         <Slot field="category" value={value.category} onChange={(next) => set('category', next)} />
-        <span>，核心权益是</span><Slot field="benefit" value={value.benefit} onChange={(next) => set('benefit', next)} />
-        <span>。应用</span><Slot field="brandOverlay" value={value.brandOverlay} onChange={(next) => set('brandOverlay', next)} />
-        <span>和</span><Slot field="searchOverlay" value={value.searchOverlay} onChange={(next) => set('searchOverlay', next)} />
-        <span>，整体采用</span><Slot field="style" value={value.style} onChange={(next) => set('style', next)} />
-        <span>风格，输出</span><Slot field="ratio" value={value.ratio} onChange={(next) => set('ratio', next)} /><span>。</span>
+        <EditableText field="afterCategory" value={value.promptCopy.afterCategory} onChange={(next) => setCopy('afterCategory', next)} /><Slot field="benefit" value={value.benefit} onChange={(next) => set('benefit', next)} />
+        <EditableText field="afterBenefit" value={value.promptCopy.afterBenefit} onChange={(next) => setCopy('afterBenefit', next)} /><Slot field="brandOverlay" value={value.brandOverlay} onChange={(next) => set('brandOverlay', next)} />
+        <EditableText field="afterBrandOverlay" value={value.promptCopy.afterBrandOverlay} onChange={(next) => setCopy('afterBrandOverlay', next)} /><Slot field="searchOverlay" value={value.searchOverlay} onChange={(next) => set('searchOverlay', next)} />
+        <EditableText field="afterSearchOverlay" value={value.promptCopy.afterSearchOverlay} onChange={(next) => setCopy('afterSearchOverlay', next)} /><Slot field="style" value={value.style} onChange={(next) => set('style', next)} />
+        <EditableText field="afterStyle" value={value.promptCopy.afterStyle} onChange={(next) => setCopy('afterStyle', next)} /><Slot field="ratio" value={value.ratio} onChange={(next) => set('ratio', next)} /><EditableText field="suffix" value={value.promptCopy.suffix} onChange={(next) => setCopy('suffix', next)} />
       </div>
       <div className="composer-actions">
         <div>

@@ -15,4 +15,12 @@ describe('GenerationBrief', () => {
     expect(prompt).toContain('高饱和未来感')
     expect(prompt).toContain('京东搜索框压板')
   })
+
+  it('uses the operator edited sentence copy in the final prompt', () => {
+    const state = {
+      ...defaultComposerState,
+      promptCopy: { ...defaultComposerState.promptCopy, prefix: '请为', afterCampaign: '快速设计一组', afterBenefit: '；并应用' },
+    }
+    expect(composePrompt(state)).toBe('请为清凉季快速设计一组开屏，主推个护美妆，核心权益是满 300 减 50；并应用京东 618 品牌压板和京东搜索框压板，整体采用清透冰感风格，输出3:4 · 750×1000。')
+  })
 })

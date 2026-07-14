@@ -1,6 +1,30 @@
 export const taskTypes = ['开屏', '营销海报', 'Banner / 资源位', '营销会场'] as const
 export type TaskType = (typeof taskTypes)[number]
 
+export type PromptCopy = {
+  prefix: string
+  afterCampaign: string
+  afterTask: string
+  afterCategory: string
+  afterBenefit: string
+  afterBrandOverlay: string
+  afterSearchOverlay: string
+  afterStyle: string
+  suffix: string
+}
+
+export const defaultPromptCopy: PromptCopy = {
+  prefix: '为',
+  afterCampaign: '创建一组',
+  afterTask: '，主推',
+  afterCategory: '，核心权益是',
+  afterBenefit: '。应用',
+  afterBrandOverlay: '和',
+  afterSearchOverlay: '，整体采用',
+  afterStyle: '风格，输出',
+  suffix: '。',
+}
+
 export type ComposerState = {
   taskType: TaskType
   campaign: string
@@ -10,6 +34,7 @@ export type ComposerState = {
   searchOverlay: string
   style: string
   ratio: string
+  promptCopy: PromptCopy
 }
 
 export type GenerationBrief = ComposerState & {
@@ -28,10 +53,12 @@ export const defaultComposerState: ComposerState = {
   searchOverlay: '京东搜索框压板',
   style: '清透冰感',
   ratio: '3:4 · 750×1000',
+  promptCopy: defaultPromptCopy,
 }
 
 export function composePrompt(state: ComposerState) {
-  return `为${state.campaign}创建${state.taskType}，主推${state.category}，核心权益${state.benefit}。使用${state.brandOverlay}与${state.searchOverlay}，整体采用${state.style}风格，输出${state.ratio}规格。`
+  const copy = state.promptCopy
+  return `${copy.prefix}${state.campaign}${copy.afterCampaign}${state.taskType}${copy.afterTask}${state.category}${copy.afterCategory}${state.benefit}${copy.afterBenefit}${state.brandOverlay}${copy.afterBrandOverlay}${state.searchOverlay}${copy.afterSearchOverlay}${state.style}${copy.afterStyle}${state.ratio}${copy.suffix}`
 }
 
 export function buildGenerationBrief(state: ComposerState, now = new Date()): GenerationBrief {
